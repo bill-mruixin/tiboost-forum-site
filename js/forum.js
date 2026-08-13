@@ -145,9 +145,6 @@ function init() {
 }
 
 /* ============================================================
-   主視覺
-   ============================================================ */
-/* ============================================================
    右側主視覺：只定位，不做動畫
 
    客戶要求 Banner 的視覺重心在左側文案，右邊維持靜止，
@@ -284,30 +281,17 @@ function heroCopyIntro(isDesktop) {
   const sub = copy.querySelector('.fhero-sub');
   const meta = copy.querySelector('.fhero-meta');
 
-  const line = (el, at) => { if (el) tl.call(() => el.classList.add('is-line'), null, at); };
-
   let t = 0;
-  if (eyebrow) {
-    // ✦ 當作提示符：先亮起來，游標才開始吐字
-    const mark = eyebrow.querySelector('i');
-    if (mark) tl.from(mark, { scale: 0, autoAlpha: 0, duration: 0.35, ease: 'back.out(3)' }, 0);
-    line(eyebrow, 0.05);
-    // 只打 <span> 裡的文字，✦ 留在外面當提示符
-    t = 0.3 + typeIn(tl, eyebrow.querySelector('span') || eyebrow, 0.3, 0.035, 0.75);
-  }
-
+  // 標語文字包在 <span> 裡，直接打整個 <p> 也可以，包起來只是留個掛點
+  if (eyebrow) t = 0.15 + typeIn(tl, eyebrow.querySelector('span') || eyebrow, 0.15, 0.035, 0.75);
   if (title) t = t + 0.18 + typeIn(tl, title, t + 0.18, 0.055, 1.1);
-  if (sub) {
-    t = t + 0.12 + typeIn(tl, sub, t + 0.12, 0.045, 0.7);
-    line(sub, t - 0.15);            // 底線在字打完前一點就開始掃，接得比較順
-  }
+  if (sub) t = t + 0.12 + typeIn(tl, sub, t + 0.12, 0.045, 0.7);
 
   if (meta) {
-    // 資訊框像儀表開機：本體先進來，折角展開，兩列讀值再從亂碼校正回正確值
-    tl.from(meta, { y: 24, autoAlpha: 0, duration: 0.5 }, t + 0.1);
-    line(meta, t + 0.3);
-    meta.querySelectorAll('dd').forEach((dd, i) => scrambleIn(tl, dd, t + 0.35 + i * 0.18));
-    t += 1.2;
+    // 時間地點兩列淡入後，讀值再從亂碼校正回正確值
+    tl.from(meta.querySelectorAll('div'), { x: -14, autoAlpha: 0, duration: 0.45, stagger: 0.12 }, t + 0.1);
+    meta.querySelectorAll('dd').forEach((dd, i) => scrambleIn(tl, dd, t + 0.3 + i * 0.18));
+    t += 1.0;
   }
 
   // 進場結束後，TiBOOST 字樣持續微亮呼吸，讓左側保有一點動態。
