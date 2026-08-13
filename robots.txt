@@ -1,0 +1,8 @@
+# GitHub Pages 是給客戶看的預覽站，不希望被搜尋引擎收錄，
+# 否則會和正式站 asia-innovation-cup.tw 打架（重複內容）。
+# 上正式網域時請改回：
+#   User-agent: *
+#   Allow: /
+#   Sitemap: https://asia-innovation-cup.tw/sitemap.xml
+User-agent: *
+Disallow: /
