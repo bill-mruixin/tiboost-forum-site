@@ -6,9 +6,48 @@
   'use strict';
 
   var API_BASE = window.QA_API_BASE || '';
-  var CONTACT = '這個問題超出我能回答的範圍，請來信 yi-ching.pan@tvca.org.tw 或 sophia.hsiao@tvca.org.tw。';
 
-  var state = { busy: false, token: null, qaCache: null, greeted: false };
+  /* ---------- 語言 ---------- */
+  /* 提問語種判定（與後端 GeminiClient.WantsEnglish 同規則）：
+     漢字且無假名／諺文 → 中文；英文與其他語言 → 英文；純數字符號 → 依頁面語言。 */
+  var HAN = /[一-鿿㐀-䶿]/;
+  var KANA_HANGUL = /[぀-ヿㇰ-ㇿᄀ-ᇿ㄰-㆏가-힯]/;
+  var LETTER = /\p{L}/u;
+
+  var PAGE_EN = (document.documentElement.lang || '').toLowerCase().indexOf('en') === 0;
+
+  function langOf(q) {
+    if (KANA_HANGUL.test(q)) return 'en';
+    if (HAN.test(q)) return 'zh';
+    if (LETTER.test(q)) return 'en';
+    return PAGE_EN ? 'en' : 'zh';
+  }
+
+  var T = {
+    zh: {
+      fab: 'QA 小幫手',
+      open: '開啟常見問題小幫手',
+      title: 'QA 小幫手',
+      close: '關閉',
+      placeholder: '輸入問題…',
+      send: '送出',
+      greet: '您好！我是 TiBOOST 創新大步計畫活動小幫手，關於報名、資格、時程、獎項的問題都可以問我 😊',
+      contact: '這個問題超出我能回答的範圍，請來信 yi-ching.pan@tvca.org.tw 或 sophia.hsiao@tvca.org.tw。',
+    },
+    en: {
+      fab: 'QA Assistant',
+      open: 'Open the FAQ assistant',
+      title: 'QA Assistant',
+      close: 'Close',
+      placeholder: 'Ask a question…',
+      send: 'Send',
+      greet: "Hi! I'm the TiBOOST Innovation Growth Program assistant. Ask me anything about applying, eligibility, the schedule, or the prizes 😊",
+      contact: "That's outside what I can answer. Please email yi-ching.pan@tvca.org.tw or sophia.hsiao@tvca.org.tw.",
+    },
+  };
+  var UI = PAGE_EN ? T.en : T.zh;
+
+  var state = { busy: false, token: null, qaCache: { zh: null, en: null }, greeted: false };
 
   /* ---------- DOM ---------- */
   function el(tag, cls, text) {
@@ -20,24 +59,24 @@
 
   var fab = el('button', 'qa-fab');
   fab.appendChild(el('i', null, '✦'));
-  fab.appendChild(el('span', null, 'QA 小幫手'));
-  fab.setAttribute('aria-label', '開啟常見問題小幫手');
-  fab.setAttribute('title', 'QA 小幫手');
+  fab.appendChild(el('span', null, UI.fab));
+  fab.setAttribute('aria-label', UI.open);
+  fab.setAttribute('title', UI.fab);
 
   var overlay = el('div', 'qa-overlay');
   overlay.hidden = true;
   overlay.setAttribute('role', 'dialog');
   overlay.setAttribute('aria-modal', 'true');
-  overlay.setAttribute('aria-label', '常見問題小幫手');
+  overlay.setAttribute('aria-label', UI.title);
 
   var backdrop = el('div', 'qa-backdrop');
   var panel = el('div', 'qa-panel');
 
   var head = el('div', 'qa-head');
   head.appendChild(el('span', 'qa-head-star', '✦'));
-  head.appendChild(el('span', 'qa-head-title', 'QA 小幫手'));
+  head.appendChild(el('span', 'qa-head-title', UI.title));
   var closeBtn = el('button', 'qa-close', '×');
-  closeBtn.setAttribute('aria-label', '關閉');
+  closeBtn.setAttribute('aria-label', UI.close);
   head.appendChild(closeBtn);
 
   var msgs = el('div', 'qa-msgs');
@@ -48,9 +87,9 @@
   var input = el('input', 'qa-input');
   input.type = 'text';
   input.maxLength = 300;
-  input.placeholder = '輸入問題…';
-  input.setAttribute('aria-label', '輸入問題');
-  var sendBtn = el('button', 'qa-send', '送出');
+  input.placeholder = UI.placeholder;
+  input.setAttribute('aria-label', UI.placeholder);
+  var sendBtn = el('button', 'qa-send', UI.send);
   sendBtn.type = 'submit';
   form.appendChild(input);
   form.appendChild(sendBtn);
@@ -121,14 +160,14 @@
     });
   }
 
-  /* ---------- 本地關鍵字降級 ---------- */
-  function loadQaCache() {
-    if (state.qaCache) return Promise.resolve(state.qaCache);
-    return apiGet('/api/qa').then(function (items) {
-      state.qaCache = items;
+  /* ---------- 本地關鍵字降級（依提問語種取對應知識文件） ---------- */
+  function loadQaCache(lang) {
+    if (state.qaCache[lang]) return Promise.resolve(state.qaCache[lang]);
+    return apiGet('/api/qa?lang=' + lang).then(function (items) {
+      state.qaCache[lang] = items;
       return items;
     }).catch(function () {
-      state.qaCache = [];
+      state.qaCache[lang] = [];
       return [];
     });
   }
@@ -139,7 +178,7 @@
     for (var i = 0; i < s.length - 1; i++) set[s.slice(i, i + 2)] = 1;
     return set;
   }
-  function localAnswer(q, items) {
+  function localAnswer(q, items, lang) {
     var qb = bigrams(q);
     var scored = items.map(function (item) {
       var score = 0;
@@ -150,7 +189,7 @@
       for (var g in qb) if (tb[g]) score += 1;
       return { item: item, score: score };
     }).sort(function (a, b) { return b.score - a.score; });
-    if (!scored.length || scored[0].score < 2) return CONTACT;
+    if (!scored.length || scored[0].score < 2) return T[lang].contact;
     return scored[0].item.a;
   }
 
@@ -162,25 +201,24 @@
 
     addMsg('qa-msg-user', question);
     var thinking = addThinking();
+    var lang = langOf(question);
 
     getToken().then(function (token) {
       return apiPost('/api/chat', { token: token, question: question });
     }).then(function (res) {
       thinking.remove();
       if (res.mode === 'fallback') {
-        return loadQaCache().then(function (items) {
-          var ans = localAnswer(question, items);
-          typeMsg(ans, finish);
+        return loadQaCache(lang).then(function (items) {
+          typeMsg(localAnswer(question, items, lang), finish);
         });
       }
       typeMsg(res.answer, finish);
     }).catch(function () {
       thinking.remove();
-      loadQaCache().then(function (items) {
-        var ans = localAnswer(question, items);
-        typeMsg(ans, finish);
+      loadQaCache(lang).then(function (items) {
+        typeMsg(localAnswer(question, items, lang), finish);
       }).catch(function () {
-        typeMsg(CONTACT, finish);
+        typeMsg(T[lang].contact, finish);
       });
     });
 
@@ -197,7 +235,7 @@
     overlay.hidden = false;
     if (!state.greeted) {
       state.greeted = true;
-      addMsg('qa-msg-bot', '您好！我是 TiBOOST 創新大步計畫活動小幫手，關於報名、資格、時程、獎項的問題都可以問我 😊');
+      addMsg('qa-msg-bot', UI.greet);
     }
     input.focus();
   }
