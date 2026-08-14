@@ -15,11 +15,11 @@ const SITE = {
 /* ============================================================
    KV 調參：手與星芒的位置
 
-   手不是用固定座標擺的 —— heroPlace() 以標準字上的 .oo-spark
+   手不是用固定座標擺的 —— heroContact() 以標準字上的 .oo-spark
    （兩個 O 交疊處）為錨點，反推兩隻手食指指尖該落在哪，所以標準字大小
    一改，手就自己跟著跑。這裡的數字都是「相對接觸點」的偏移。
 
-   右側主視覺是靜態的（不做進場、呼吸、視差），動畫全集中在左側文案，
+   進場（兩手滑近交會＋星芒綻放）比照競賽官網 main.js 的 heroContact，
    所以這裡只剩定位參數。亮度／透明度在 forum.css 的 --kv-* 調整。
    ============================================================ */
 const KV = {
@@ -84,7 +84,11 @@ const windowLoaded = document.readyState === 'complete'
       new Promise(resolve => setTimeout(resolve, 5000)),
     ]);
 
-Promise.all([fontsReady, windowLoaded]).then(() => {
+/* 左側文案的設計稿 SVG 先內嵌進來再開演：內嵌後 SVG 裡的文字才吃得到
+   頁面的網頁字型，進場動畫也才抓得到裡面的 [data-kv] 掛點。 */
+const heroSvgReady = heroCopySvg();
+
+Promise.all([fontsReady, windowLoaded, heroSvgReady]).then(() => {
   requestAnimationFrame(() => requestAnimationFrame(() => {
     init();
     ScrollTrigger.refresh();
@@ -105,8 +109,8 @@ function init() {
 
       // 降低動態偏好：只留最低限度的淡入，主視覺直接定位到最終狀態
       if (reduceMotion) {
-        heroPlace();
-        // 不打字，直接把文案顯示出來（html.js 預設先藏起來，見 forum.css）
+        heroContact(false);
+        // 不跑進場，直接把文案顯示出來（html.js 預設先藏起來，見 forum.css）
         document.querySelector('.fhero-copy')?.classList.add('is-ready');
         gsap.utils.toArray('[data-fade], [data-reveal], [data-split-lines], .speaker, .winner, .contact-card, .venn-c, .agenda tbody tr')
           .forEach(el => {
@@ -118,7 +122,7 @@ function init() {
         return;
       }
 
-      heroPlace();
+      heroContact(true);
       heroCopyIntro(isDesktop);
       heroParallax(isDesktop);
       aboutReveal(isDesktop);
@@ -145,14 +149,13 @@ function init() {
 }
 
 /* ============================================================
-   右側主視覺：只定位，不做動畫
+   右側主視覺：定位＋指尖交會（比照競賽官網 main.js 的 heroContact）
 
-   客戶要求 Banner 的視覺重心在左側文案，右邊維持靜止，
-   所以這裡沒有進場、呼吸或視差 —— 兩隻手一載入就停在最終位置。
    手不是寫死座標：以標準字上的 .oo-spark（兩個 O 交疊處）為錨點反推
    指尖該落在哪，標準字一改大小手就自己跟著跑。
+   animate=false（降低動態偏好）時只定位，直接停在最終狀態。
    ============================================================ */
-function heroPlace() {
+function heroContact(animate) {
   const hero = document.querySelector('.fhero');
   const spark = document.querySelector('.oo-spark');
   const burst = document.querySelector('.hero-burst');
@@ -186,125 +189,151 @@ function heroPlace() {
   const settleIv = setInterval(() => { place(); if (++settleN >= 8) clearInterval(settleIv); }, 700);
 
   const oo = document.querySelector('.hero-lockup');
-  if (oo) oo.classList.add('is-glow');
+  const rImg = hr.querySelector('img');
+  const lImg = hl.querySelector('img');
+  const bImg = burst ? burst.querySelector('img') : null;
+
+  if (!animate) { if (oo) oo.classList.add('is-glow'); return; }
+
+  /* 接觸時間軸與競賽官網同一份：兩手沿手臂軸滑近，唯一那顆星跟著右手同軌跡，
+     相觸瞬間原地綻放＋OO 發光＋灑一波星點，最後兩手與光點同相位呼吸。 */
+  // 星芒的置中靠 CSS 的 translate(-50%,-50%)，GSAP 只讀得到換算後的 px，
+  // 一旦補間 x/y 就會把置中吃掉 → 先改用 xPercent/yPercent 記這一半，x/y 歸零重算。
+  gsap.set(burst, { autoAlpha: 0, xPercent: -50, yPercent: -50, x: 0, y: 0 });
+  const ctl = gsap.timeline({ delay: 0.35 });
+  ctl.fromTo([rImg, lImg], { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.9, ease: 'power1.out' }, 0)
+    .fromTo(rImg, { x: 285, y: -120 }, { x: 0, y: 0, duration: 2.7, ease: 'sine.inOut' }, 0)
+    .fromTo(lImg, { x: -285, y: 120 }, { x: 0, y: 0, duration: 2.7, ease: 'sine.inOut' }, 0)
+    .fromTo(burst, { x: 285, y: -120, autoAlpha: 0 },
+      { autoAlpha: 0.72, duration: 0.9, ease: 'power1.out' }, 0)
+    .to(burst, { x: 0, y: 0, duration: 2.7, ease: 'sine.inOut' }, 0)
+    .fromTo(bImg, { scale: 0.42, rotation: -12 },
+      { scale: 0.56, rotation: -4, duration: 2.7, ease: 'sine.inOut' }, 0)
+    .add('touch', 2.7)
+    .to(burst, { autoAlpha: 1, duration: 0.3, ease: 'power2.out' }, 'touch')
+    .to(bImg, { scale: 1.16, rotation: 0, duration: 0.42, ease: 'power2.out' }, 'touch')
+    .to(bImg, { scale: 1, duration: 0.6, ease: 'power2.inOut' }, 'touch+=0.42')
+    .call(() => { if (oo) oo.classList.add('is-glow'); }, null, 'touch')
+    // 相觸瞬間灑一波星點（同競賽官網）
+    .call(() => sparkleBurst(hero), null, 'touch')
+    // 接觸瞬間的輕微反彈
+    .to(rImg, { x: 5, y: -3, duration: 0.15, ease: 'power2.out' }, 'touch')
+    .to(lImg, { x: -5, y: 3, duration: 0.15, ease: 'power2.out' }, 'touch')
+    .to(rImg, { x: 0, y: 0, duration: 0.5, ease: 'power2.inOut' }, 'touch+=0.17')
+    .to(lImg, { x: 0, y: 0, duration: 0.5, ease: 'power2.inOut' }, 'touch+=0.17')
+    // 接觸後：兩手與光點同步呼吸（同相位，接點不散）＋星芒脈動
+    .call(() => {
+      gsap.to([rImg, lImg, burst], { y: '+=9', duration: 4.4, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+      if (bImg) gsap.to(bImg, { scale: 1.18, duration: 2.6, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+    });
+}
+
+/* 相觸瞬間灑出的星點（同競賽官網 main.js 的接觸回呼）。
+   Banner 平常沒有星野 —— ambientFx() 刻意不含 .fhero（客戶要求右側不要有
+   流星掃過），所以這裡自己補一層 .ambient 專門放這些星，不含流星與漂移光點。 */
+function sparkleBurst(hero) {
+  let layer = hero.querySelector('.ambient');
+  if (!layer) {
+    layer = document.createElement('div');
+    layer.className = 'ambient';
+    layer.setAttribute('aria-hidden', 'true');
+    hero.prepend(layer);
+  }
+  for (let i = 0; i < 14; i++) {
+    const st = document.createElement('span');
+    st.className = 'bg-star' + (Math.random() < 0.35 ? ' is-white' : '');
+    st.textContent = Math.random() < 0.6 ? '✦' : '·';
+    st.style.left = (Math.random() * 90 + 5) + '%';
+    st.style.top = (Math.random() * 80 + 8) + '%';
+    st.style.fontSize = (Math.random() * 9 + 7) + 'px';
+    layer.appendChild(st);
+    gsap.fromTo(st, { opacity: 0, scale: 0 },
+      { opacity: Math.random() * 0.5 + 0.5, scale: 1, duration: 0.5, delay: Math.random() * 0.5, ease: 'back.out(2)' });
+    gsap.to(st, { opacity: 0.15, duration: Math.random() * 1.6 + 1.2, yoyo: true, repeat: -1, ease: 'sine.inOut', delay: 0.9 + Math.random() });
+  }
 }
 
 /* ============================================================
-   逐字輸出：像終端機打字
+   內嵌設計稿 SVG
 
-   SplitText 切好字後全部設 .kv-typing（visibility:hidden，版位先佔住，
-   所以打字過程不會重排），再用一個計數補間推進「已輸出到第幾字」，
-   游標插在字頭前面。ease 一律 'none'，速度才是等速的打字感。
-   打完 revert() 還原原始標記，RWD 斷行才不會卡在切字當下的寬度。
-
-   cap 是這段打字的秒數上限：英文句子字數是中文的兩三倍，不封頂的話
-   英文版光是打完標語就要一秒多。回傳實際花的秒數，方便外層排下一拍。
+   用 <img> 載 SVG 的話裡面吃不到頁面的網頁字型（會退回系統字），
+   所以改成 fetch 回來直接塞進 DOM。取不到檔時（例如用 file:// 直接開）
+   仍退回 <img>，字型不對至少畫面不會空著。
    ============================================================ */
-function typeIn(tl, el, at, speed, cap) {
-  const split = new SplitText(el, { type: 'chars' });
-  const chars = split.chars;
-  if (!chars.length) { split.revert(); return 0; }
-  chars.forEach(c => c.classList.add('kv-typing'));
+function heroCopySvg() {
+  const slot = document.querySelector('.fhero-svg-slot[data-hero-svg]');
+  if (!slot) return Promise.resolve();
+  const url = slot.dataset.heroSvg;
 
-  const caret = document.createElement('i');
-  caret.className = 'kv-caret';
-  caret.setAttribute('aria-hidden', 'true');
-
-  const state = { n: 0 };
-  let shown = -1;
-  const total = Math.min(chars.length * speed, cap);
-
-  tl.to(state, {
-    n: chars.length, duration: total, ease: 'none',
-    onStart() { chars[0].parentNode.insertBefore(caret, chars[0]); },
-    onUpdate() {
-      const n = Math.floor(state.n);
-      if (n === shown) return;                 // 同一格內不動 DOM
-      for (let i = shown + 1; i < n; i++) chars[i].classList.remove('kv-typing');
-      shown = n - 1;
-      const head = chars[n];
-      if (head) head.parentNode.insertBefore(caret, head);
-      else caret.remove();
-    },
-    onComplete() {
-      chars.forEach(c => c.classList.remove('kv-typing'));
-      caret.remove();
-      split.revert();
-    },
-  }, at);
-
-  return total;
-}
-
-/* ============================================================
-   讀值校正：文字先跑亂碼，再由左往右一格一格定住
-
-   GSAP 官方的 ScrambleTextPlugin 要 Club 會員，CDN 拿不到，
-   所以自己做一個最小版：只換還沒定住的字，空白保留不動。
-   ============================================================ */
-const SCRAMBLE_SET = '01234567890ABCDEF#%$&*/\\<>+-=';
-function scrambleIn(tl, el, at) {
-  const text = el.textContent;
-  const state = { n: 0 };
-  tl.to(state, {
-    n: text.length, duration: Math.min(0.9, text.length * 0.045), ease: 'none',
-    onStart() { el.classList.add('is-scrambling'); },
-    onUpdate() {
-      const n = Math.floor(state.n);
-      let out = text.slice(0, n);
-      for (let i = n; i < text.length; i++) {
-        out += text[i] === ' ' ? ' ' : SCRAMBLE_SET[(Math.random() * SCRAMBLE_SET.length) | 0];
-      }
-      el.textContent = out;
-    },
-    onComplete() { el.textContent = text; el.classList.remove('is-scrambling'); },
-  }, at);
+  return fetch(url)
+    .then(res => { if (!res.ok) throw new Error(res.status); return res.text(); })
+    .then(txt => {
+      const doc = new DOMParser().parseFromString(txt, 'image/svg+xml');
+      const svg = doc.querySelector('svg');
+      if (!svg || doc.querySelector('parsererror')) throw new Error('parse failed');
+      slot.appendChild(document.importNode(svg, true));
+    })
+    .catch(() => {
+      const img = document.createElement('img');
+      img.className = 'fhero-svg';
+      img.src = url;
+      img.alt = '';
+      slot.appendChild(img);
+    });
 }
 
 /* ============================================================
    左側文案進場：Banner 的主角
 
-   終端機式的逐行輸出 —— 標語打完換標題、再換副標，游標一路帶著走，
-   最後資訊框開機、時間地點的讀值先亂碼再校正。
-   裝飾線條是 ::before/::after，GSAP 動不到，改由 .fhero-copy 上的
-   .is-in 觸發 forum.css 的 keyframes，兩邊時間軸對齊
-   （見 forum.css「文案進場動畫」段落的 delay）。
+   文案整塊是主辦設計稿的 SVG，逐行進場靠裡面的 [data-kv] 掛點推。
+   每一行動之前先套一層 <g>：設計稿自己的 <text> 上帶著 transform
+   matrix（排版就靠它），直接讓 GSAP 動會把那個 matrix 蓋掉，字就跑位。
+   裝飾線條是 ::before，GSAP 選不到，改由 .fhero-copy 上的 .is-in
+   觸發 forum.css 的 keyframes，兩邊時間軸對齊。
    ============================================================ */
+/* 進場順序＝設計稿由上而下：光暈先鋪底，再標語→標準字→標題→副標→資訊框 */
+const KV_LINES = ['glow', 'eyebrow', 'mark', 'title', 'sub', 'bracket', 'time', 'place'];
+
 function heroCopyIntro(isDesktop) {
   const copy = document.querySelector('.fhero-copy');
   if (!copy) return;
   copy.classList.add('is-in');
 
-  const tl = gsap.timeline({ defaults: { ease: 'power3.out' }, delay: 0.25 });
-  const eyebrow = copy.querySelector('.fhero-eyebrow');
-  const title = copy.querySelector('.fhero-title');
-  const sub = copy.querySelector('.fhero-sub');
-  const meta = copy.querySelector('.fhero-meta');
-
-  let t = 0;
-  // 標語文字包在 <span> 裡，直接打整個 <p> 也可以，包起來只是留個掛點
-  if (eyebrow) t = 0.15 + typeIn(tl, eyebrow.querySelector('span') || eyebrow, 0.15, 0.035, 0.75);
-  if (title) t = t + 0.18 + typeIn(tl, title, t + 0.18, 0.055, 1.1);
-  if (sub) t = t + 0.12 + typeIn(tl, sub, t + 0.12, 0.045, 0.7);
-
-  if (meta) {
-    // 時間地點兩列淡入後，讀值再從亂碼校正回正確值
-    tl.from(meta.querySelectorAll('div'), { x: -14, autoAlpha: 0, duration: 0.45, stagger: 0.12 }, t + 0.1);
-    meta.querySelectorAll('dd').forEach((dd, i) => scrambleIn(tl, dd, t + 0.3 + i * 0.18));
-    t += 1.0;
+  const svg = copy.querySelector('svg.fhero-svg');
+  // 退回 <img> 的情況（見 heroCopySvg）：抓不到掛點，整塊淡入就好
+  if (!svg) {
+    copy.classList.add('is-ready');
+    gsap.from(copy.querySelector('.fhero-svg-slot'), { autoAlpha: 0, duration: 0.8, delay: 0.25 });
+    return;
   }
 
-  // 進場結束後，TiBOOST 字樣持續微亮呼吸，讓左側保有一點動態。
-  // <b> 要在 revert() 之後才抓：SplitText 還原時會重建節點，先抓會拿到孤兒節點。
+  const tl = gsap.timeline({ defaults: { ease: 'power3.out' }, delay: 0.25 });
+
+  KV_LINES.forEach((name, i) => {
+    const nodes = svg.querySelectorAll('[data-kv="' + name + '"]');
+    if (!nodes.length) return;
+    // 同名節點（光暈是三張圖）一起包，包在第一個節點原本的位置以維持疊圖順序
+    const wrap = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    nodes[0].parentNode.insertBefore(wrap, nodes[0]);
+    nodes.forEach(node => wrap.appendChild(node));
+
+    const isGlow = name === 'glow';
+    tl.from(wrap, {
+      autoAlpha: 0,
+      y: isGlow ? 0 : 14,
+      duration: isGlow ? 0.9 : 0.55,
+    }, isGlow ? 0 : 0.2 + i * 0.13);
+  });
+
+  // 進場結束後，TiBOOST 標準字持續微亮呼吸，讓左側保有一點動態
   if (isDesktop) {
-    tl.call(() => {
-      const brand = title ? title.querySelector('b') : null;
-      if (!brand) return;
-      gsap.to(brand, {
-        textShadow: '0 0 42px rgba(198,242,20,.72)',
+    const mark = svg.querySelector('[data-kv="mark"]');
+    if (mark) {
+      tl.to(mark, {
+        filter: 'drop-shadow(0 0 22px rgba(198,242,20,.6))',
         duration: 2.8, yoyo: true, repeat: -1, ease: 'sine.inOut',
-      });
-    });
+      }, '>0.2');
+    }
   }
 }
 

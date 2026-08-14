@@ -110,13 +110,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
   <!-- 文案區塊：依主辦提供的 Banner 設計稿，靠左直排（標語／標題／副標／時間地點） -->
   <div class="fhero-copy">
-    <p class="fhero-eyebrow" data-fade><span>A Boost Toward Your Next Big Step.</span></p>
-    <h1 class="fhero-title" data-fade><b>TiBOOST</b> Innovation Growth Program</h1>
-    <p class="fhero-sub" data-fade>Forum &amp; Final Award Ceremony</p>
-    <dl class="fhero-meta" data-fade>
-      <div><dt>Date</dt><dd>Nov 10 (Tue), 2026 09:30-18:00</dd></div>
-      <div><dt>Venue</dt><dd>Grand Hi-Lai Hotel Taipei 3F</dd></div>
-    </dl>
+    <!-- 標題文字改由主辦提供的設計稿 SVG 呈現（見 images/hero-copy-*.svg）。
+         SVG 由 forum.js 在載入時 fetch 內嵌進來 —— 內嵌之後頁面的網頁字型才吃得到，
+         用 <img> 載會退回系統字。裡面的 data-kv 是逐行進場的掛點。 -->
+    <h1 class="sr-only">TiBOOST Innovation Growth Program Final and Awards Ceremony</h1>
+    <div class="fhero-svg-slot" data-hero-svg="../images/hero-copy-en.svg" aria-hidden="true"></div>
+    <noscript><img class="fhero-svg" src="../images/hero-copy-en.svg" alt="" width="645" height="503"></noscript>
   </div>
 </section>
 
@@ -167,7 +166,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <span class="sec-title-en">Agenda</span>
     </div>
 
-    <p class="agenda-when" data-fade>Nov 10 (Tue), 2026｜09:30–18:00</p>
+    <p class="agenda-when" data-fade>Nov 10 (Tue), 2026｜08:30–21:30</p>
     <p class="agenda-where" data-fade>Grand Hi-Lai Hotel Taipei, 3F (No. 168, Jingmao 1st Rd., Nangang Dist., Taipei)</p>
 
     <div class="agenda-wrap" data-fade>
@@ -178,10 +177,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         </thead>
         <tbody>
           <tr><td data-label="Time">08:30–09:30</td><td data-label="Min">60</td><td data-label="Session">Registration</td><td data-label="Speaker"></td></tr>
-          <tr><td data-label="Time">09:30–09:35</td><td data-label="Min">5</td><td data-label="Session">Opening Remarks</td><td data-label="Speaker">Jin-lung Peng｜Chairperson, Financial Supervisory Commission (FSC)<i>(TBC)</i></td></tr>
+          <tr><td data-label="Time">09:30–09:35</td><td data-label="Min">5</td><td data-label="Session">Opening Remarks</td><td data-label="Speaker">Jin-lung Peng｜Chairperson, Financial Supervisory Commission (FSC)</td></tr>
           <tr><td data-label="Time">09:35–09:40</td><td data-label="Min">5</td><td data-label="Session">Opening Remarks</td><td data-label="Speaker">Chun-Hsien Yeh｜Minister, National Development Council<i>(TBC)</i></td></tr>
           <tr><td data-label="Time">09:40–09:45</td><td data-label="Min">5</td><td data-label="Session">VIP Remarks</td><td data-label="Speaker">Andy Chiu｜Chairman, Taiwan Private Equity Association (TPEA)</td></tr>
-          <tr><td data-label="Time">09:45–09:50</td><td data-label="Min">5</td><td data-label="Session">VIP Remarks</td><td data-label="Speaker">Raymond F. Greene｜Director, American Institute in Taiwan<i>(TBC)</i></td></tr>
+          <tr><td data-label="Time">09:45–09:50</td><td data-label="Min">5</td><td data-label="Session">VIP Remarks</td><td data-label="Speaker">Raymond F. Greene｜Director, American Institute in Taiwan (AIT)<i>(TBC)</i></td></tr>
           <tr><td data-label="Time">09:50–10:00</td><td data-label="Min">10</td><td data-label="Session">Presidential Remarks</td><td data-label="Speaker">H.E. Lai Ching-te｜President of the Republic of China (Taiwan)<i>(TBC)</i></td></tr>
           <tr><td data-label="Time">10:00–10:10</td><td data-label="Min">10</td><td data-label="Session">Group Photo</td><td data-label="Speaker"></td></tr>
           <tr><td data-label="Time">10:10–10:50</td><td data-label="Min">40</td><td data-label="Session">The Next Decade of AI: Reshaping Technology, Capital, and Global Competition</td><td data-label="Speaker"><i>(TBC)</i></td></tr>
@@ -202,7 +201,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
               <b>Moderator:</b><br>Lee-Feng Chien｜Independent Director, Appier<i>(TBC)</i><br>
               <b>Panelists:</b><br>Jamie Lin｜Founder, AppWorks<i>(TBC)</i><br>
               Shane Chesson｜Founding Partner, OpenSpace Capital<i>(TBC)</i><br>
-              Brenda Hu｜Senior Vice President, Taiwan Stock Exchange<i>(TBC)</i>
+              Brenda Hu｜Senior Vice President, Taiwan Stock Exchange
             </td>
           </tr>
           <tr><td data-label="Time">12:20–13:30</td><td data-label="Min">70</td><td data-label="Session">Lunch</td><td data-label="Speaker"></td></tr>
