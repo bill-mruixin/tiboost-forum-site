@@ -111,32 +111,32 @@ html.js .fhero-copy.is-ready{ visibility:visible }
 
 /* 三圓交疊：對應設計稿的 Venn，改以酸性系細線圓呈現。
    每圓都是「標題 + 一行說明」，文字塊靠 margin 推到不重疊的扇形區裡。 */
-.venn{ position:relative; width:100%; aspect-ratio:1 / .92; max-width:520px; margin:0 auto }
+.venn{ position:relative; width:100%; aspect-ratio:1 / .9; max-width:520px; margin:0 auto }
 .venn-c{
-  position:absolute; width:62%; aspect-ratio:1; border-radius:50%;
+  position:absolute; width:56%; aspect-ratio:1; border-radius:50%;
   display:flex; align-items:center; justify-content:center; text-align:center;
   border:1px solid var(--line); backdrop-filter:blur(2px);
 }
-.venn-t{ display:block; max-width:46% }
-/* 英文字比中文窄，同寬會斷成四行，放寬一點但不能碰到相鄰圓的交疊區 */
-html[lang^="en"] .venn-t{ max-width:54% }
+/* 交疊區留給圖形，文字塊限寬後用 margin 推進各圓「只屬於自己」的那一塊。
+   margin 推的距離是設定值的一半（flex 置中會把剩餘空間對半分），所以數字看起來偏大。 */
+.venn-t{ display:block; max-width:64% }
 .venn-c b{
-  display:block; font-family:var(--font-zh); font-weight:400; font-size:clamp(13px, 1.4vw, 16px);
-  letter-spacing:.12em; line-height:1.5;
+  display:block; font-family:var(--font-zh); font-weight:400; font-size:clamp(12px, 1.35vw, 15px);
+  letter-spacing:.1em; line-height:1.55;
 }
 .venn-c i{
   display:block; margin-top:6px; font-style:normal; font-family:var(--font-zh);
-  font-size:clamp(10px, 1.05vw, 12px); letter-spacing:.06em; line-height:1.7; color:var(--gray);
+  font-size:clamp(9px, 1vw, 11px); letter-spacing:.04em; line-height:1.7; color:var(--gray);
 }
 .venn-c--1{ top:0; left:50%; transform:translateX(-50%); background:rgba(198,242,20,.10); border-color:rgba(198,242,20,.55) }
 .venn-c--1 b{ color:var(--acid) }
-.venn-c--1 .venn-t{ margin-bottom:44% }
+.venn-c--1 .venn-t{ margin-bottom:42% }
 .venn-c--2{ bottom:0; left:0; background:rgba(244,244,242,.06) }
 .venn-c--2 b{ color:var(--white) }
-.venn-c--2 .venn-t{ margin:28% 0 0 -34% }
+.venn-c--2 .venn-t{ margin:28% 0 0 -14% }
 .venn-c--3{ bottom:0; right:0; background:rgba(143,174,16,.14); border-color:rgba(198,242,20,.3) }
 .venn-c--3 b{ color:var(--white) }
-.venn-c--3 .venn-t{ margin:28% -34% 0 0 }
+.venn-c--3 .venn-t{ margin:28% -14% 0 0 }
 
 /* ============ 議程 ============ */
 .agenda-when{ font-family:var(--font-mono); font-size:clamp(17px, 2.1vw, 24px); letter-spacing:.14em; color:var(--acid) }
